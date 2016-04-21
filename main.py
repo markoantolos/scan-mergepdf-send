@@ -21,7 +21,10 @@ from gmail import GMail
 def main():
     # Authenticate with GMail by creating it
     gmail = GMail()
-    print('moving on')
+    try:
+        gmail.authenticate()
+    except Exception as e:
+        print('Autentikacija sa GMailom nije uspjela:', e)
 
     # To talk to user via command line
     user = UserInterface()  

@@ -37,11 +37,7 @@ class GMail:
     def __init__(self):
         self.credentials = self.authenticate()
         http = self.credentials.authorize(httplib2.Http())
-        try:
-            self.service = discovery.build('gmail', 'v1', http=http)
-        except Exception as e:
-            print('Problem', e)
-            sys.exit()
+        self.service = discovery.build('gmail', 'v1', http=http)
 
     def authenticate(self):
         home_dir = os.path.expanduser('~')

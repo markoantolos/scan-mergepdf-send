@@ -1,5 +1,5 @@
 username = 'Marko'
-directory = '/home/marko/dev/scan-mergepdf-send/scans'
+scans_directory = '/home/marko/dev/scan-mergepdf-send/scans'
 merge_directory = '/home/marko/dev/scan-mergepdf-send/merged'
 archive_directory = '/home/marko/dev/scan-mergepdf-send/archive'
 my_email = 'marko@markoantolos.com'
