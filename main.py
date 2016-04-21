@@ -1,4 +1,4 @@
-#! /usr/bin/python
+
 
 import sys, time, warnings
 warnings.filterwarnings("ignore")
@@ -77,7 +77,6 @@ def main():
     message = gmail.create_message_with_attachment(options)
     draft = gmail.create_draft(message)
     gmail.open_draft(draft)
-    print(draft)
 
     # Finished
     time.sleep(1)

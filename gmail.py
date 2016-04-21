@@ -57,12 +57,12 @@ class GMail:
             print('Spremam autentikaciju u ' + credential_path)
         return credentials
 
-    def create_message(sender, to, subject, message_text):
-        message = MIMEText(message_text)
-        message['to'] = to
-        message['from'] = sender
-        message['subject'] = subject
-        return {'raw': base64.b64encode(message.as_string())}
+    def create_message(sender, options):
+        message = MIMEText(options['text'])
+        message['to'] = options.get('to', my_email)
+        message['from'] = options.get('sender',  my_email)
+        message['subject'] = options.get('subject', '')
+        return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
 
     def create_message_with_attachment(self, options):
         sender = my_email
@@ -120,14 +120,32 @@ class GMail:
             print('Doslo je do greske: %s' % error)
             return None
 
+    def update_draft(self, draft, message):
+        body = {'message': message}
+        draft = self.service.users().drafts().update(userId='me', id=draft['id'], body=body).execute()
+        return draft
+
     def open_draft(self, draft):
         threadId = draft['message']['id']
         url = "https://mail.google.com/mail/#drafts?compose=%s" % threadId
 
+        print('URL:', url)
         # Call chrome crossplatform
         if os.name == 'nt':
             call(["chrome", url], shell=True)
         else:
             call(["google-chrome", url])
         print('\nPosiljka je spremna u browseru.')
+
+    def open_draft_while_attaching(self, options):
+        # message = self.create_message(options)
+        # draft = self.create_draft(message)
+        # print(draft)
+
+        message = self.create_message_with_attachment(options)
+        draft = self.create_draft(message)
+        self.open_draft(draft)
+        print(draft)
+
+        return draft
 
