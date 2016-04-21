@@ -1,0 +1,6 @@
+username = 'Marko'
+directory = '/home/marko/dev/pdf/scans'
+merge_directory = '/home/marko/dev/pdf/merged'
+archive_directory = '/home/marko/dev/pdf/archive'
+# directory = 'F:\\Users\\Svjetlana\\Documents'
+# merge_directory = 'F:\\Users\\Svjetlana\\Documents\\Spojeni'
