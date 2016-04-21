@@ -119,7 +119,6 @@ class GMail:
         try:
             body = {'message': message}
             draft = self.service.users().drafts().create(userId='me', body=body).execute()
-            print('Draft created')
             return draft
         except errors.HttpError as error:
             print('Doslo je do greske: %s' % error)
