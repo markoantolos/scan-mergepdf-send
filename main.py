@@ -62,16 +62,19 @@ def main():
     
     # Are we done or do we email this PDF with GMail?
     if not user.ask.mail_now():
-        options = {
-            'to': '',
-            'subject': '',
-            'text': 'PDF je u privitku...',
-            'files': [],
-        }
-
-        gmail.create_message_with_attachment(options)
         return
 
+    options = {
+        'to': '',
+        'subject': '',
+        'text': 'PDF je u privitku...',
+        'files': [output_path],
+    }
+
+    message = gmail.create_message_with_attachment(options)
+    draft = gmail.create_draft(message)
+    gmail.open_draft(draft)
+    print(draft)
 
     # Finished
     time.sleep(1)
