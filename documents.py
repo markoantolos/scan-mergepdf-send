@@ -13,6 +13,7 @@ Functions for picking scans cronologicaly and working with pdf files
 
 import os, shutil
 from PyPDF2 import PdfFileReader, PdfFileWriter
+import extract_images
 
 from config import username, scans_directory, merge_directory, archive_directory
 
@@ -74,6 +75,8 @@ def get_last_period(filenames, seconds):
         else:
             break
     return result
+
+
 def pages_from_files(filenames):
     for filename in filenames:
         f = open(filename, 'rb')
@@ -88,6 +91,13 @@ def merge_pages(pages):
     for page in pages:
         output.addPage(page)
     return output
+
+
+def write_preview(pdf, path):
+    images = extract_images.from_pdf(pdf)
+    for im in images:
+        print(im)
+    return images
 
 
 def write_pdf(pdf, name):

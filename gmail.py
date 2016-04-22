@@ -26,7 +26,7 @@ SCOPES = 'https://mail.google.com/'
 
 if my_email == 'marko@markoantolos.com':
     CLIENT_SECRET_FILE = 'client_secret_marko.json'
-elif my_email === 'info@bilanca-usluge.hr':
+elif my_email == 'info@bilanca-usluge.hr':
     CLIENT_SECRET_FILE = 'client_secret_svjetlana.json'
 
 APPLICATION_NAME = 'DocSender'
@@ -134,7 +134,6 @@ class GMail:
         threadId = draft['message']['id']
         url = "https://mail.google.com/mail/#drafts?compose=%s" % threadId
 
-        print('URL:', url)
         # Call chrome crossplatform
         if os.name == 'nt':
             call(["chrome", url], shell=True)
@@ -150,7 +149,6 @@ class GMail:
         message = self.create_message_with_attachment(options)
         draft = self.create_draft(message)
         self.open_draft(draft)
-        print(draft)
 
         return draft
 
