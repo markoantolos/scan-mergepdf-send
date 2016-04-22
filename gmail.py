@@ -23,7 +23,12 @@ from config import my_email
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
 SCOPES = 'https://mail.google.com/'
-CLIENT_SECRET_FILE = 'client_secret.json'
+
+if my_email == 'marko@markoantolos.com':
+    CLIENT_SECRET_FILE = 'client_secret_marko.json'
+elif my_email === 'info@bilanca-usluge.hr':
+    CLIENT_SECRET_FILE = 'client_secret_svjetlana.json'
+
 APPLICATION_NAME = 'DocSender'
 
 try:
