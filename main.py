@@ -1,3 +1,5 @@
+#! /usr/local/bin/python3.4
+
 import sys, time, warnings
 warnings.filterwarnings("ignore")
 
@@ -24,6 +26,7 @@ def main():
     except Exception as e:
         print('Autentikacija sa GMailom nije uspjela:', e)
 
+    sys.exit()
     # To talk to user via command line
     user = UserInterface()  
 
@@ -75,9 +78,18 @@ def main():
         'files': [output_path],
     }
 
-    message = gmail.create_message_with_attachment(options)
+    message = gmail.create_message(options)
+
     draft = gmail.create_draft(message)
+    messageID = draft['message'].get('id')
+    print('Draft created')
     gmail.open_draft(draft)
+
+    message2 = gmail.create_message_with_attachment(options)
+    message2_response = gmail.update_message(messageID, message)
+    print('Uploaded attachment')
+    print('Draft 1:', draft)
+    print('Draft 2:', message2_response)
 
     # Finished
     time.sleep(1)
