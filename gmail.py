@@ -141,14 +141,3 @@ class GMail:
             call(["google-chrome", url])
         print('\nPosiljka je spremna u browseru.')
 
-    def open_draft_while_attaching(self, options):
-        # message = self.create_message(options)
-        # draft = self.create_draft(message)
-        # print(draft)
-
-        message = self.create_message_with_attachment(options)
-        draft = self.create_draft(message)
-        self.open_draft(draft)
-
-        return draft
-

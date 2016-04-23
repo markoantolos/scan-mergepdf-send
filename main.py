@@ -1,5 +1,3 @@
-
-
 import sys, time, warnings
 warnings.filterwarnings("ignore")
 
@@ -60,8 +58,8 @@ def main():
     # Write the merged PDF file
     output_path = docs.write_pdf(output, title)
 
-    image = docs.write_preview(output, 'preview.pdf')
-    print('Image:', image)
+    # image = docs.write_preview(output, 'preview.pdf')
+    # print('Image:', image)
 
     # Archive merged files
     docs.archive_files(filenames)

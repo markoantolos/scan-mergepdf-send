@@ -17,7 +17,6 @@ import extract_images
 
 from config import username, scans_directory, merge_directory, archive_directory
 
-
 scans_directory = os.path.abspath(scans_directory)
 merge_directory = os.path.abspath(merge_directory)
 archive_directory = os.path.abspath(archive_directory)
