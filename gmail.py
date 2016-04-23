@@ -52,19 +52,21 @@ class GMail:
         self.messages = self.service.users().messages()
         self.people = discovery.build('people', 'v1', http=http).people()
 
-        # fields = 'person.emailAddresses, person.names'
-        # r = requests.get('https://people.googleapis.com/v1/me/connections?requestMask.includeField=person.emailAddresses,person.names')
-        me_query = self.people.connections().list(resourceName='people/me', query_parameters={'requestMask.includeField': 'person.emailAddresses'})
+        me_query = self.people.connections().list(
+            resourceName='people/me',
+            requestMask_includeField='person.names,person.emailAddresses'
+        )
+
         self.me = me_query.execute()
         connections = self.me['connections']
-        sys.exit()
-
         self.contacts = []
         for person in connections:
             name = person['names'][0]
-            print(person)
+            email = person.get('emailAddresses')
+            email = email[0] if email else None
             self.contacts.append({
                 'name': name['displayName'],
+                'email': email['value'] if email else '',
                 'resourceName': person['resourceName']
             })
 
@@ -88,11 +90,6 @@ class GMail:
         return credentials
 
 
-    def get_profile(self, resourceName):
-        print(resourceName)
-        return self.people.get(resourceName)
-
-
     def create_message(sender, options):
         message = MIMEText(options['text'])
         message['to'] = options.get('to', my_email)
@@ -109,7 +106,6 @@ class GMail:
         message['to'] = options.get('to', my_email)
         message['from'] = options.get('sender',  my_email)
         message['subject'] = options.get('subject', '')
-        print('OPTIONS', options)
         message_text = MIMEText(options['text'])
         content_type, encoding = mimetypes.guess_type(attachment)
 
@@ -146,7 +142,6 @@ class GMail:
         try:
             body = {'message': message}
             draft = self.drafts.create(userId='me', body=body).execute()
-            print('DRAFT:', draft)
             return draft
         except errors.HttpError as error:
             print('Doslo je do greske: %s' % error)
@@ -167,7 +162,6 @@ class GMail:
 
 
     def update_message(self, mID, message):
-        print(message)
         message['addLabelIds'] = ['INBOX']
         message = self.messages.modify(userId='me', id=mID, body=message).execute()
         return message

@@ -82,14 +82,14 @@ def main():
             maxratio = ratio
             best_match = person
 
-    person = gmail.get_profile(best_match['resourceName'])
-    print(person)
+    print(best_match)
+    email_options['to'] = best_match['email']
+    print(email_options)
 
     # Create email with attachment and open it in GMail
     email_options['files'] = [output_path]
     message = gmail.create_message_with_attachment(email_options)
     draft = gmail.create_draft(message)
-    print(draft)
     gmail.open_draft(draft)
 
     # Finished
