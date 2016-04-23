@@ -3,6 +3,7 @@
 import sys, time, warnings
 warnings.filterwarnings("ignore")
 
+from fuzzywuzzy import fuzz
 import documents as docs
 from interface import UserInterface
 from gmail import GMail
@@ -26,7 +27,6 @@ def main():
     except Exception as e:
         print('Autentikacija sa GMailom nije uspjela:', e)
 
-    sys.exit()
     # To talk to user via command line
     user = UserInterface()  
 
@@ -68,28 +68,29 @@ def main():
     docs.archive_files(filenames)
     
     # Are we done or do we email this PDF with GMail?
-    if not user.ask.mail_now():
+    email_options = user.ask.mail_now()
+    if not email_options:
         return
 
-    options = {
-        'to': '',
-        'subject': '',
-        'text': 'PDF je u privitku...',
-        'files': [output_path],
-    }
+    # Fuzzy match the 'to' field against contacts
+    name = email_options['to']
+    maxratio = 0
+    best_match = None
+    for person in gmail.contacts:
+        ratio = fuzz.partial_ratio(person['name'], name)
+        if ratio > maxratio:
+            maxratio = ratio
+            best_match = person
 
-    message = gmail.create_message(options)
+    person = gmail.get_profile(best_match['resourceName'])
+    print(person)
 
+    # Create email with attachment and open it in GMail
+    email_options['files'] = [output_path]
+    message = gmail.create_message_with_attachment(email_options)
     draft = gmail.create_draft(message)
-    messageID = draft['message'].get('id')
-    print('Draft created')
+    print(draft)
     gmail.open_draft(draft)
-
-    message2 = gmail.create_message_with_attachment(options)
-    message2_response = gmail.update_message(messageID, message)
-    print('Uploaded attachment')
-    print('Draft 1:', draft)
-    print('Draft 2:', message2_response)
 
     # Finished
     time.sleep(1)

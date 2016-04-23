@@ -13,7 +13,12 @@ class Ask:
         answer = input('Mailam odmah? (da) ')
         if 'n' in answer.lower():
             return False
-        return True
+
+        return {
+            'to': input('Kome: '),
+            'subject': input('Naslov: '),
+            'text': input('Poruka: ')
+        }
 
 
 class UserInterface:

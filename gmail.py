@@ -5,6 +5,7 @@ and opening them in browser for editing and sending
 
 import os, sys, base64, httplib2
 from subprocess import call
+import requests
 
 from apiclient import discovery, errors
 
@@ -24,9 +25,9 @@ from config import my_email
 # at ~/.credentials/gmail-python-quickstart.json
 SCOPES = [
     'https://mail.google.com/',
-    'https://www.googleapis.com/auth/contacts.readonly'
+    'https://www.googleapis.com/auth/contacts.readonly',
 ]
-
+''''''
 if my_email == 'marko@markoantolos.com':
     CLIENT_SECRET_FILE = 'client_secret_marko.json'
 elif my_email == 'info@bilanca-usluge.hr':
@@ -43,25 +44,29 @@ except ImportError:
 
 class GMail:
     def __init__(self):
+
         self.credentials = self.authenticate()
         http = self.credentials.authorize(httplib2.Http())
         self.service = discovery.build('gmail', 'v1', http=http)
         self.drafts = self.service.users().drafts()
         self.messages = self.service.users().messages()
         self.people = discovery.build('people', 'v1', http=http).people()
-        me_query = self.people.connections().list(resourceName='people/me')
-        me = me_query.execute()
-        connections = me['connections']
-        people = []
+
+        # fields = 'person.emailAddresses, person.names'
+        # r = requests.get('https://people.googleapis.com/v1/me/connections?requestMask.includeField=person.emailAddresses,person.names')
+        me_query = self.people.connections().list(resourceName='people/me', query_parameters={'requestMask.includeField': 'person.emailAddresses'})
+        self.me = me_query.execute()
+        connections = self.me['connections']
+        sys.exit()
+
+        self.contacts = []
         for person in connections:
-            print(person)
             name = person['names'][0]
-            people.append({
+            print(person)
+            self.contacts.append({
                 'name': name['displayName'],
                 'resourceName': person['resourceName']
             })
-        for p in people:
-            print(p)
 
 
     def authenticate(self):
@@ -82,6 +87,12 @@ class GMail:
             print('Spremam autentikaciju u ' + credential_path)
         return credentials
 
+
+    def get_profile(self, resourceName):
+        print(resourceName)
+        return self.people.get(resourceName)
+
+
     def create_message(sender, options):
         message = MIMEText(options['text'])
         message['to'] = options.get('to', my_email)
@@ -98,7 +109,7 @@ class GMail:
         message['to'] = options.get('to', my_email)
         message['from'] = options.get('sender',  my_email)
         message['subject'] = options.get('subject', '')
-
+        print('OPTIONS', options)
         message_text = MIMEText(options['text'])
         content_type, encoding = mimetypes.guess_type(attachment)
 
@@ -135,6 +146,7 @@ class GMail:
         try:
             body = {'message': message}
             draft = self.drafts.create(userId='me', body=body).execute()
+            print('DRAFT:', draft)
             return draft
         except errors.HttpError as error:
             print('Doslo je do greske: %s' % error)
