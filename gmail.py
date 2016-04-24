@@ -44,13 +44,16 @@ except ImportError:
 
 class GMail:
     def __init__(self):
-
         self.credentials = self.authenticate()
         http = self.credentials.authorize(httplib2.Http())
-        self.service = discovery.build('gmail', 'v1', http=http)
-        self.drafts = self.service.users().drafts()
-        self.messages = self.service.users().messages()
-        self.people = discovery.build('people', 'v1', http=http).people()
+
+        try:
+            self.service = discovery.build('gmail', 'v1', http=http)
+            self.drafts = self.service.users().drafts()
+            self.messages = self.service.users().messages()
+            self.people = discovery.build('people', 'v1', http=http).people()
+        except Exception as e:
+            print('Google API je nedostupan:', e)
 
         me_query = self.people.connections().list(
             resourceName='people/me',
@@ -61,12 +64,23 @@ class GMail:
         connections = self.me['connections']
         self.contacts = []
         for person in connections:
+            emails = person.get('emailAddresses')
+            if not emails:
+                continue
+
+            for mail in emails:
+                print('email:', mail)
+                if mail['value']:
+                    email = mail['value']
+                    break
+            else:
+                email = None
+                print('No email found for', name)
             name = person['names'][0]
-            email = person.get('emailAddresses')
-            email = email[0] if email else None
+            
             self.contacts.append({
                 'name': name['displayName'],
-                'email': email['value'] if email else '',
+                'email': email,
                 'resourceName': person['resourceName']
             })
 
@@ -106,7 +120,10 @@ class GMail:
         message['to'] = options.get('to', my_email)
         message['from'] = options.get('sender',  my_email)
         message['subject'] = options.get('subject', '')
+        print('OPTIONS:', options)
         message_text = MIMEText(options['text'])
+        message.attach(message_text)
+
         content_type, encoding = mimetypes.guess_type(attachment)
 
         if content_type is None or encoding is not None:

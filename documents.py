@@ -38,6 +38,7 @@ def get_reversed_files():
     filenames = [ os.path.join(scans_directory, f)
             for f in filenames
             if f.lower().startswith('scan')
+            or f.lower().startswith('dokument')
             and f.lower().endswith('.pdf')
     ]
     filenames = sorted(filenames, key = os.path.getmtime, reverse = True)
