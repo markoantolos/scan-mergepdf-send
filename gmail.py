@@ -5,7 +5,6 @@ and opening them in browser for editing and sending
 
 import os, sys, base64, httplib2
 from subprocess import call
-import requests
 import json
 from fuzzywuzzy import fuzz
 
@@ -75,26 +74,6 @@ class GMail:
         # Prepare contacts
         self.contacts = Contacts(options.get('contacts_file'), self.people)
 
-    @property
-    def messages(self):
-        if self._messages:
-            return self._messages
-        self._messages = self.users.messages()
-        return self._messages
-
-    @property
-    def drafts(self):
-        if self._drafts:
-            return self._drafts
-        self._drafts = self.users.drafts()
-        return self._drafts
-
-    @property
-    def people(self):
-        if self._people:
-            return self._people
-        self._people = discovery.build('people', 'v1', http=self.http).people()
-        return self._people
 
     def authenticate(self):
         home_dir = os.path.expanduser('~')
@@ -186,3 +165,23 @@ class GMail:
             call(["google-chrome", url])
         print('\nPosiljka je spremna u browseru.')
 
+    @property
+    def messages(self):
+        if self._messages:
+            return self._messages
+        self._messages = self.users.messages()
+        return self._messages
+
+    @property
+    def drafts(self):
+        if self._drafts:
+            return self._drafts
+        self._drafts = self.users.drafts()
+        return self._drafts
+
+    @property
+    def people(self):
+        if self._people:
+            return self._people
+        self._people = discovery.build('people', 'v1', http=self.http).people()
+        return self._people

@@ -21,12 +21,16 @@ class Ask:
         }
 
     def confirm_message(self, options):
+        print()
         print('Pripremam email za', options['to'])
-        print('-' * 80)
+        print('=' * 80)
         print('Prima:', options['to'])
         print('Naslov:', options['subject'])
+        print('-' * 80)
         print('Poruka:', options['text'])
+        print('-' * 80)
         print('Prilog:', options['files'])
+        print()
         answer = input('(otvori GMail) ili odmah (p)osalji? ')
         return bool(answer)
 
