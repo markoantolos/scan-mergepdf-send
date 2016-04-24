@@ -21,7 +21,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.encoders import encode_base64
 
-from config import my_email
+from config import my_email, secret_file
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/gmail-python-quickstart.json
@@ -29,11 +29,7 @@ SCOPES = [
     'https://mail.google.com/',
     'https://www.googleapis.com/auth/contacts.readonly',
 ]
-''''''
-if my_email == 'marko@markoantolos.com':
-    CLIENT_SECRET_FILE = 'client_secret_marko.json'
-elif my_email == 'info@bilanca-usluge.hr':
-    CLIENT_SECRET_FILE = 'client_secret_svjetlana.json'
+CLIENT_SECRET_FILE = secret_file
 
 # Directories
 APPLICATION_NAME = 'DocSender'
@@ -123,6 +119,9 @@ class Contact:
     def __str__(self):
         return self.display_name + '(%s)' % self.email
 
+    def __len__(self):
+        return len(str(self))
+
 class Contacts:
     def __init__(self, path, people):
         self.file_path = path
@@ -135,7 +134,7 @@ class Contacts:
         maxratio = 0
         best_match = None
         for contact in self:
-            ratio = fuzz.partial_ratio(contact.display_name, name)
+            ratio = fuzz.partial_ratio(contact, name)
             if ratio > maxratio:
                 maxratio = ratio
                 best_match = contact
@@ -277,6 +276,7 @@ class GMail:
     def create_draft(self, message):
         try:
             body = {'message': message}
+            print('Uploadam privitak...')
             draft = self.drafts.create(userId='me', body=body).execute()
             return draft
         except errors.HttpError as error:
