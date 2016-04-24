@@ -79,8 +79,6 @@ def main():
     # Find a contact and set its email as 'to' field
     name = email_options.get('to')
     contact = gmail.contacts.match(name)
-    for c in gmail.contacts:
-        print(c)
     email_options['to'] = contact.email
     email_options['files'] = [out_path]
     
