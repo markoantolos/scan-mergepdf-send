@@ -6,6 +6,8 @@ and opening them in browser for editing and sending
 import os, sys, base64, httplib2
 from subprocess import call
 import requests
+import json
+from fuzzywuzzy import fuzz
 
 from apiclient import discovery, errors
 
@@ -33,8 +35,15 @@ if my_email == 'marko@markoantolos.com':
 elif my_email == 'info@bilanca-usluge.hr':
     CLIENT_SECRET_FILE = 'client_secret_svjetlana.json'
 
+# Directories
 APPLICATION_NAME = 'DocSender'
+BASE_DIR = os.path.abspath('.')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+
+# Arguments (not needed)
 try:
     import argparse
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -42,48 +51,141 @@ except ImportError:
     flags = None
 
 
-class GMail:
-    def __init__(self):
-        self.credentials = self.authenticate()
-        http = self.credentials.authorize(httplib2.Http())
+class Contact:
+    def __init__(self, data):
+        self.data = data
 
-        try:
-            self.service = discovery.build('gmail', 'v1', http=http)
-            self.drafts = self.service.users().drafts()
-            self.messages = self.service.users().messages()
-            self.people = discovery.build('people', 'v1', http=http).people()
-        except Exception as e:
-            print('Google API je nedostupan:', e)
+        # Pick a primary email
+        self.emails = data.get('emailAddresses', [])
 
+        for mail in self.emails:
+            value = mail.get('value')
+            if not value:
+                continue
+            meta = mail.get('metadata')
+            if meta and meta.get('primary') and mail.get('value'):
+                self.email = value
+                break
+        else:
+            self.email = None
+
+        # Pick a primary name
+        self.names = data.get('names', [])
+        if self.names:
+            for name in self.names:
+                display_name = name.get('displayName')
+                first_name = name.get('firstName')
+                last_name = name.get('lastName')
+                if not display_name:
+                    continue
+                meta = name.get('metadata')
+                if meta and meta.get('primary'):
+                    self.display_name = display_name
+                    self.first_name = first_name
+                    self.last_name = last_name
+
+        # Resource name
+        self.resource_name = data.get('resourceName')
+
+    def serialize(self):
+        return {
+            'display_name': self.display_name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'email': self.email,
+            'resurceName': self.resource_name
+        }
+
+    def __str__(self):
+        return self.display_name + '(%s)' % self.email
+
+class Contacts:
+    def __init__(self, path, people):
+        self.file_path = path
+        self.people = people
+        self._contacts = []
+        if not os.path.exists(self.file_path):
+            self.write()
+
+    def match(self, name):
+        maxratio = 0
+        best_match = None
+        for contact in self:
+            ratio = fuzz.partial_ratio(contact.display_name, name)
+            if ratio > maxratio:
+                maxratio = ratio
+                best_match = contact
+        return best_match
+
+    def read(self):
+        with open(self.file_path, encoding='utf-8') as f:
+            text = f.read()
+            if text and len(text) > 1:
+                data = json.loads(text)
+                if data and len(data):
+                    return self.parse(data)
+            return None
+
+    def write(self):
+        with open(self.file_path, 'w+') as f:
+            json.dump([c.serialize() for c in self.contacts], f)
+
+    def parse(self, data):
+        people = [Contact(person) for person in data]
+        return [c for c in people if c.email]
+
+    def fetch(self):
         me_query = self.people.connections().list(
             resourceName='people/me',
             requestMask_includeField='person.names,person.emailAddresses'
         )
+        me = me_query.execute()
+        connections = me['connections']
+        return self.parse(connections)
 
-        self.me = me_query.execute()
-        connections = self.me['connections']
-        self.contacts = []
-        for person in connections:
-            emails = person.get('emailAddresses')
-            if not emails:
-                continue
+    @property
+    def contacts(self):
+        if self._contacts and len(self._contacts):
+            return self._contacts
 
-            for mail in emails:
-                print('email:', mail)
-                if mail['value']:
-                    email = mail['value']
-                    break
-            else:
-                email = None
-                print('No email found for', name)
-            name = person['names'][0]
-            
-            self.contacts.append({
-                'name': name['displayName'],
-                'email': email,
-                'resourceName': person['resourceName']
-            })
+        from_file = self.read()
+        if from_file:
+            return from_file
+        else:
+            self._contacts = self.fetch()
+            self.write()
+            return self._contacts
 
+    def __iter__(self):
+        for contact in self.contacts:
+            yield contact
+
+    def __len__(self):
+        return len(self._contacts)
+
+class GMail:
+    def __init__(self, options=None):
+        defaults = {
+            'contacts_file': os.path.join(DATA_DIR, 'contacts.json'),
+        }
+        if not options:
+            options = defaults
+
+        # Auth
+        self.credentials = self.authenticate()
+        http = self.credentials.authorize(httplib2.Http())
+
+        # Try to instantiate services (requires internet connection)
+        try:
+            self.service = discovery.build('gmail', 'v1', http=http)
+            self.drafts = self.service.users().drafts()
+            self.people = discovery.build('people', 'v1', http=http).people()
+        except Exception as e:
+            print('Google API je nedostupan:', e)
+            self.ok = False
+
+        # Prepare contacts
+        self.contacts = Contacts(options.get('contacts_file'), self.people)
 
     def authenticate(self):
         home_dir = os.path.expanduser('~')
@@ -104,13 +206,6 @@ class GMail:
         return credentials
 
 
-    def create_message(sender, options):
-        message = MIMEText(options['text'])
-        message['to'] = options.get('to', my_email)
-        message['from'] = options.get('sender',  my_email)
-        message['subject'] = options.get('subject', '')
-        return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
-
     def create_message_with_attachment(self, options):
         attachment = options['files'][0]
         directory = os.path.split(attachment)[0]
@@ -120,7 +215,6 @@ class GMail:
         message['to'] = options.get('to', my_email)
         message['from'] = options.get('sender',  my_email)
         message['subject'] = options.get('subject', '')
-        print('OPTIONS:', options)
         message_text = MIMEText(options['text'])
         message.attach(message_text)
 
@@ -177,11 +271,6 @@ class GMail:
             print('Doslo je do greske: %s' % error)
             return None
 
-
-    def update_message(self, mID, message):
-        message['addLabelIds'] = ['INBOX']
-        message = self.messages.modify(userId='me', id=mID, body=message).execute()
-        return message
 
     def open_draft(self, draft):
         threadId = draft['message']['id']

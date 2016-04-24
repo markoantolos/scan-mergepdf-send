@@ -9,9 +9,6 @@ import documents as docs
 from interface import UserInterface
 from gmail import GMail
 
-DEBUG = True
-if DEBUG:
-    from config import archive_directory, scans_directory
 
 # Ask if n docs should be merged or a group od docs
 # scanned in given time. (default: time bound sequence)
@@ -75,22 +72,9 @@ def main():
     if not email_options:
         return
 
-    # Fuzzy match the 'to' field against contacts
-    name = email_options['to']
-    maxratio = 0
-    best_match = None
-    for person in gmail.contacts:
-        emails = person['email']
-        print(person, '\n')
-
-        ratio = fuzz.partial_ratio(person['name'], name)
-        if ratio > maxratio:
-            maxratio = ratio
-            best_match = person
-
-    print('BEST_MATCH:', best_match)
-    email_options['to'] = best_match['email']
-    print('EMAIL_OPTIONS:', email_options)
+    name = email_options.get('to')
+    contact = gmail.contacts.match(name)
+    email_options['to'] = contact.email
 
     # Create email with attachment and open it in GMail
     email_options['files'] = [output_path]
