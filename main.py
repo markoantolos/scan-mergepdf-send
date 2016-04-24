@@ -69,7 +69,7 @@ def main():
     out_path = merge_files(filenames, title)
 
     # Archive merged files
-    docs.archive_files(filenames)
+    #docs.archive_files(filenames)
     
     # Are we done or do we email this PDF with GMail?
     email_options = user.ask.mail_now()
@@ -79,6 +79,8 @@ def main():
     # Find a contact and set its email as 'to' field
     name = email_options.get('to')
     contact = gmail.contacts.match(name)
+    for c in gmail.contacts:
+        print(c)
     email_options['to'] = contact.email
     email_options['files'] = [out_path]
     

@@ -53,48 +53,63 @@ except ImportError:
 
 class Contact:
     def __init__(self, data):
-        self.data = data
+        self.data = data = self.parse(data)
+        self.first_name = data.get('first_name')
+        self.last_name = data.get('last_name')
+        self.display_name = data.get('display_name')
+        self.email = data.get('email')
+        self.resource_name = data.get('resource_name')
+
+    def parse(self, data):
+        fields = {
+            'first_name': data.get('first_name'),
+            'last_name': data.get('last_name'),
+            'display_name': data.get('display_name'),
+            'email': data.get('email'),
+            'resource_name': data.get('resource_name'),
+        }
+
+        if any(fields.values()):
+            return fields
 
         # Pick a primary email
-        self.emails = data.get('emailAddresses', [])
-        for mail in self.emails:
+        emails = data.get('emailAddresses', [])
+        for mail in emails:
             value = mail.get('value')
             if not value:
                 continue
             meta = mail.get('metadata')
             if meta and meta.get('primary') and mail.get('value'):
-                self.email = value
+                email = value
                 break
         else:
-            self.email = None
+            email = None
 
         # Pick a primary name
-        self.names = data.get('names', [])
-        if self.names:
-            for name in self.names:
-                display_name = name.get('displayName')
-                first_name = name.get('firstName')
-                last_name = name.get('lastName')
-                if not display_name:
-                    continue
-                meta = name.get('metadata')
-                if meta and meta.get('primary'):
-                    self.display_name = display_name
-                    self.first_name = first_name
-                    self.last_name = last_name
+        names = data.get('names', [])
+        for name in names:
+            display_name = name.get('displayName')
+            first_name = name.get('firstName')
+            last_name = name.get('lastName')
+            if not display_name:
+                continue
+            meta = name.get('metadata')
+            if meta and meta.get('primary'):
+                break
+        else:
+            return None
 
         # Resource name
-        self.resource_name = data.get('resourceName')
+        resource_name = data.get('resourceName')
 
-    @staticmethod
-    def from_file(self, data):
-        self.email = data.get('email')
-        self.first_name = data.get('first_name')
-        self.last_name = data.get('last_name')
-        self.display_name = data.get('display_name')
-        self.resource_name = data.get('resource_name')
-        self.emails = []
-        self.names = []
+        fields = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'display_name': display_name,
+            'email': email,
+            'resource_name': resource_name,
+        }
+        return fields
 
     def serialize(self):
         return {
@@ -159,7 +174,6 @@ class Contacts:
             return self._contacts
 
         from_file = self.read()
-        print('fromfle', from_file)
         if from_file:
             return from_file
         else:
@@ -216,9 +230,9 @@ class GMail:
             print('Spremam autentikaciju u ' + credential_path)
         return credentials
 
-
     def create_message_with_attachment(self, options):
-        attachment = options['files'][0]
+        attachment = options.get('files')
+        attachment = attachment[0] if attachment else ''
         directory = os.path.split(attachment)[0]
         filename = os.path.basename(attachment)
 
@@ -233,32 +247,32 @@ class GMail:
 
         if content_type is None or encoding is not None:
             content_type = 'application/octet-stream'
-
         main_type, sub_type = content_type.split('/', 1)
-        if main_type == 'text':
-            fp = open(attachment, 'rb')
-            message_text = MIMEText(fp.read(), _subtype=sub_type)
-            fp.close()
-        elif main_type == 'image':
-            fp = open(attachment, 'rb')
-            message_text = MIMEImage(fp.read(), _subtype=sub_type)
-            fp.close()
-        elif main_type == 'audio':
-            fp = open(attachment, 'rb')
-            message_text = MIMEAudio(fp.read(), _subtype=sub_type)
-            fp.close()
-        else:
-            fp = open(attachment, 'rb')
-            message_text = MIMEBase(main_type, sub_type)
-            message_text.set_payload(fp.read())
-            encode_base64(message_text)
-            fp.close()
 
-        filename = os.path.basename(attachment)
-        message_text.add_header('Content-Disposition', 'attachment', filename=filename)
-        message.attach(message_text)
+        if attachment:
+            if main_type == 'text':
+                fp = open(attachment, 'rb')
+                message_text = MIMEText(fp.read(), _subtype=sub_type)
+                fp.close()
+            elif main_type == 'image':
+                fp = open(attachment, 'rb')
+                message_text = MIMEImage(fp.read(), _subtype=sub_type)
+                fp.close()
+            elif main_type == 'audio':
+                fp = open(attachment, 'rb')
+                message_text = MIMEAudio(fp.read(), _subtype=sub_type)
+                fp.close()
+            else:
+                fp = open(attachment, 'rb')
+                message_text = MIMEBase(main_type, sub_type)
+                message_text.set_payload(fp.read())
+                encode_base64(message_text)
+                fp.close()
+
+            filename = os.path.basename(attachment)
+            message_text.add_header('Content-Disposition', 'attachment', filename=filename)
+            message.attach(message_text)
         return {'raw': base64.urlsafe_b64encode(message.as_bytes()).decode()}
-
 
     def create_draft(self, message):
         try:
@@ -268,20 +282,6 @@ class GMail:
         except errors.HttpError as error:
             print('Doslo je do greske: %s' % error)
             return None
-
-
-    def update_draft(self, dID, message):
-        try:
-            body = {'message': message}
-            draft = self.drafts.update(
-                userId='me',
-                id=dID,
-                body=message).execute()
-            return draft
-        except errors.HttpError as error:
-            print('Doslo je do greske: %s' % error)
-            return None
-
 
     def open_draft(self, draft):
         threadId = draft['message']['id']
