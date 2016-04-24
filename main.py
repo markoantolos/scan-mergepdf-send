@@ -9,6 +9,7 @@ import documents as docs
 from interface import UserInterface
 from gmail import GMail
 
+from config import my_email
 
 # Ask if n docs should be merged or a group od docs
 # scanned in given time. (default: time bound sequence)
@@ -47,9 +48,7 @@ def merge_files(filenames, title):
     # Write the merged PDF file
     return docs.write_pdf(output, title)
 
-def create_draft_message(gmail, email_options):
-    message = gmail.create_message_with_attachment(email_options)
-    draft = gmail.create_draft(message)
+def create_draft_message(gmail, message):
     return draft
 
 def main():
@@ -78,13 +77,22 @@ def main():
 
     # Find a contact and set its email as 'to' field
     name = email_options.get('to')
-    contact = gmail.contacts.match(name)
-    email_options['to'] = contact.email
+    contact = None
+    if name == 'me':
+        email_options['to'] = my_email
+    else:
+        contact = gmail.contacts.match(name)
+        email_options['to'] = contact.email
     email_options['files'] = [out_path]
     
-    # Create email with attachment and open it in GMail
-    draft = create_draft_message(gmail, email_options)
-    gmail.open_draft(draft)
+    # Create message and ask if sending now or opening in gmail
+    message = gmail.create_message_with_attachment(email_options)
+    if user.ask.confirm_message(email_options):
+        response = gmail.send_message(message)
+        print(response)
+    else:
+        draft = gmail.create_draft(message)
+        gmail.open_draft(draft)
 
     # Finished
     time.sleep(1)

@@ -20,6 +20,16 @@ class Ask:
             'text': input('Poruka: ')
         }
 
+    def confirm_message(self, options):
+        print('Pripremam email za', options['to'])
+        print('-' * 80)
+        print('Prima:', options['to'])
+        print('Naslov:', options['subject'])
+        print('Poruka:', options['text'])
+        print('Prilog:', options['files'])
+        answer = input('(otvori GMail) ili odmah (p)osalji? ')
+        return bool(answer)
+
 
 class UserInterface:
     def __init__(self):
