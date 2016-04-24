@@ -57,7 +57,6 @@ class Contact:
 
         # Pick a primary email
         self.emails = data.get('emailAddresses', [])
-
         for mail in self.emails:
             value = mail.get('value')
             if not value:
@@ -87,13 +86,23 @@ class Contact:
         # Resource name
         self.resource_name = data.get('resourceName')
 
+    @staticmethod
+    def from_file(self, data):
+        self.email = data.get('email')
+        self.first_name = data.get('first_name')
+        self.last_name = data.get('last_name')
+        self.display_name = data.get('display_name')
+        self.resource_name = data.get('resource_name')
+        self.emails = []
+        self.names = []
+
     def serialize(self):
         return {
             'display_name': self.display_name,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'email': self.email,
-            'resurceName': self.resource_name
+            'resurce_name': self.resource_name
         }
 
     def __str__(self):
@@ -135,6 +144,7 @@ class Contacts:
         return [c for c in people if c.email]
 
     def fetch(self):
+        print('fetching')
         me_query = self.people.connections().list(
             resourceName='people/me',
             requestMask_includeField='person.names,person.emailAddresses'
@@ -149,6 +159,7 @@ class Contacts:
             return self._contacts
 
         from_file = self.read()
+        print('fromfle', from_file)
         if from_file:
             return from_file
         else:

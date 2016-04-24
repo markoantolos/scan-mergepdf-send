@@ -40,6 +40,18 @@ def filter_files(filenames, howmany, minutes):
         # Last group of scanned files
         return docs.get_last_files(filenames)
 
+def merge_files(filenames, title):
+    pages = docs.pages_from_files(reversed(filenames))
+    output = docs.merge_pages(pages)
+    print('Spojio sam', output.getNumPages(), 'str u', title)
+    # Write the merged PDF file
+    return docs.write_pdf(output, title)
+
+def create_draft_message(gmail, email_options):
+    message = gmail.create_message_with_attachment(email_options)
+    draft = gmail.create_draft(message)
+    return draft
+
 def main():
     # Authenticate with GMail by creating it
     gmail = GMail()
@@ -54,15 +66,7 @@ def main():
     filenames = filter_files(filenames, howmany, minutes)
 
     # Merge pages from scanned docs
-    pages = docs.pages_from_files(reversed(filenames))
-    output = docs.merge_pages(pages)
-    print('Spojio sam', output.getNumPages(), 'str u', title)
-
-    # Write the merged PDF file
-    output_path = docs.write_pdf(output, title)
-
-    # image = docs.write_preview(output, 'preview.pdf')
-    # print('Image:', image)
+    out_path = merge_files(filenames, title)
 
     # Archive merged files
     docs.archive_files(filenames)
@@ -72,14 +76,14 @@ def main():
     if not email_options:
         return
 
+    # Find a contact and set its email as 'to' field
     name = email_options.get('to')
     contact = gmail.contacts.match(name)
     email_options['to'] = contact.email
-
+    email_options['files'] = [out_path]
+    
     # Create email with attachment and open it in GMail
-    email_options['files'] = [output_path]
-    message = gmail.create_message_with_attachment(email_options)
-    draft = gmail.create_draft(message)
+    draft = create_draft_message(gmail, email_options)
     gmail.open_draft(draft)
 
     # Finished
