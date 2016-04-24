@@ -5,6 +5,7 @@ archive
 scans
 samples
 pdfs
+data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
