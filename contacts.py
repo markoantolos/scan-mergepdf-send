@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, json
 
 class Contact:
     def __init__(self, data):
